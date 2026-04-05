@@ -1,0 +1,2018 @@
+// @/prisma/schema.prisma
+
+/// Prisma Client generator used by the backend application and scripts.
+generator client {
+  /// Generate the JavaScript/TypeScript Prisma client.
+  provider = "prisma-client"
+  /// Keep generated artifacts outside the Prisma folder so application imports stay stable.
+  output   = "../generated/prisma"
+}
+
+/// Primary PostgreSQL datasource for Ticet EDU application data.
+datasource db {
+  /// Prisma uses the PostgreSQL connector because Neon is Postgres-compatible.
+  provider = "postgresql"
+}
+
+/// Business classification for a human user's primary product identity.
+enum UserAccountType {
+  /// Default human account type for general-purpose platform users.
+  TICET_USER
+  /// Learner account type with stricter elevation rules.
+  STUDENT
+  /// Educator/content-oriented account type without automatic admin power.
+  INSTRUCTOR
+}
+
+/// Platform-wide administrative classification only.
+enum UserAdministrativeRole {
+  /// Standard user with no platform override privileges.
+  NONE
+  /// Highest platform administration role used only by Ticet staff.
+  TICET_SUPER_ADMIN
+}
+
+/// Lifecycle state for a user account inside the application.
+enum UserStatus {
+  /// Account is active and allowed to operate normally.
+  ACTIVE
+  /// Account is temporarily inactive without being deleted.
+  INACTIVE
+  /// Account is suspended due to policy or moderation action.
+  SUSPENDED
+  /// Account is logically deleted for product-facing behavior.
+  DELETED
+}
+
+/// Review and lifecycle state for creator privileges.
+enum CreatorStatus {
+  /// User has not applied for creator privileges.
+  NOT_APPLIED
+  /// Application or review is currently pending.
+  PENDING
+  /// Creator privileges are currently approved.
+  APPROVED
+  /// Application was rejected.
+  REJECTED
+  /// Creator privileges are suspended temporarily.
+  SUSPENDED
+  /// Creator privileges were revoked permanently or administratively.
+  REVOKED
+}
+
+/// Coarse onboarding progress state for product setup flows.
+enum OnboardingStatus {
+  /// Onboarding has not yet started.
+  NOT_STARTED
+  /// Onboarding is in progress.
+  IN_PROGRESS
+  /// Onboarding was completed.
+  COMPLETED
+}
+
+/// Supported gender options currently captured by the profile model.
+enum Gender {
+  /// Male selection.
+  MALE
+  /// Female selection.
+  FEMALE
+}
+
+/// Supported curricula offered by the product.
+enum CurriculumCode {
+  /// Competency-Based Education curriculum.
+  CBE
+  /// Cambridge curriculum.
+  CAM
+  /// Internal/extended curriculum code already present in the product.
+  EDX
+  /// International Baccalaureate curriculum.
+  IB
+}
+
+/// High-level exam systems associated with curricula.
+enum ExamSystems {
+  /// International General Certificate of Secondary Education.
+  IGCSE
+  /// Competency-Based Education exam system.
+  CBE
+  /// International Baccalaureate exam system.
+  IB
+}
+
+/// Institution category used for business segmentation.
+enum InstitutionCategory {
+  /// College or higher-education style institution bucket.
+  COLLEGE
+  /// Kindergarten-to-secondary institution bucket.
+  K12
+}
+
+/// Institution education level taxonomy.
+enum InstitutionLevel {
+  /// Pre-primary education level.
+  PRE_PRIMARY
+  /// Primary education level.
+  PRIMARY
+  /// Secondary education level.
+  SECONDARY
+  /// Advanced-level institution bucket.
+  ADVANCED
+  /// Informal education provider bucket.
+  INFORMAL
+  /// Technical and vocational education bucket.
+  TIVET
+  /// University education level.
+  UNIVERSITY
+}
+
+/// Top-level curriculum level grouping used by libraries and taxonomy.
+enum CurriculumLevelType {
+  /// K-12 taxonomy where subject/chapter/topic classification matters.
+  K12
+  /// Higher-education taxonomy where K-12 classification is optional.
+  HE
+}
+
+/// Review workflow state for a creator application row.
+enum CreatorApplicationStatus {
+  /// Application is awaiting review.
+  PENDING
+  /// Application was approved.
+  APPROVED
+  /// Application was rejected.
+  REJECTED
+  /// Application needs manual escalation or more review.
+  REVIEW_REQUIRED
+}
+
+/// Verification workflow state for institutions.
+enum InstitutionVerificationStatus {
+  /// Institution is awaiting review.
+  PENDING
+  /// Institution has passed verification.
+  VERIFIED
+  /// Institution failed verification.
+  REJECTED
+  /// Institution is suspended even if previously verified.
+  SUSPENDED
+}
+
+/// Visibility setting for a library; visibility is separate from access grants.
+enum LibraryVisibility {
+  /// Only the owner and explicit grantees should access the library.
+  PRIVATE
+  /// Broadly discoverable library that still depends on platform entitlements.
+  PUBLIC
+  /// Library requires explicit access even when visible to eligible users.
+  PROTECTED
+  /// Library requires a paid library subscription.
+  PREMIUM
+}
+
+/// Permission shape granted through library access rows.
+enum LibraryAccessType {
+  /// User can modify library content.
+  EDITOR
+  /// User can only consume/view the library.
+  VIEWER
+}
+
+/// Lifecycle state for a library access row.
+enum LibraryAccessStatus {
+  /// Grant exists but is not yet active.
+  PENDING
+  /// Grant is currently active.
+  ACTIVE
+  /// Grant was revoked.
+  REVOKED
+}
+
+/// External billing providers supported by the product.
+enum BillingProvider {
+  /// Stripe is the current provider integration.
+  STRIPE
+}
+
+/// Provider-backed platform subscription state.
+enum SubscriptionStatus {
+  /// Subscription is in trial.
+  TRIALING
+  /// Subscription is active.
+  ACTIVE
+  /// Payment is overdue.
+  PAST_DUE
+  /// Subscription was canceled.
+  CANCELED
+  /// Subscription creation has not completed.
+  INCOMPLETE
+  /// Subscription period ended without renewal.
+  EXPIRED
+}
+
+/// Product-level platform plans.
+enum PlatformPlan {
+  /// Free plan with strictly limited access.
+  FREE
+  /// Entry paid platform plan.
+  BRONZE
+  /// Deferred future platform plan.
+  SILVER
+  /// Deferred future platform plan.
+  GOLD
+  /// Deferred future platform plan.
+  PLATINUM
+}
+
+/// Billing cadence options retained for platform pricing and subscriptions.
+enum BillingCycle {
+  /// Seven-day billing cycle.
+  WEEK_7_DAYS
+  /// Thirty-day billing cycle.
+  MONTH_30_DAYS
+  /// One-hundred-twenty-day billing cycle.
+  FOUR_MONTHS_120_DAYS
+  /// Three-hundred-sixty-five-day billing cycle.
+  YEAR_365_DAYS
+}
+
+/// Library-specific paid subscription state.
+enum PaidLibrarySubscriptionStatus {
+  /// Subscription is active.
+  ACTIVE
+  /// Payment is overdue.
+  PAST_DUE
+  /// Subscription was canceled.
+  CANCELED
+  /// Subscription term ended.
+  EXPIRED
+}
+
+/// Dependency lifecycle for minor/custodian policy.
+enum DependencyStatus {
+  /// User currently requires at least one active custodian.
+  DEPENDENT
+  /// User can transition to independence through an audited workflow.
+  ELIGIBLE_FOR_INDEPENDENCE
+  /// User no longer requires a custodian.
+  INDEPENDENT
+}
+
+/// Relationship lifecycle between a dependent and a custodian.
+enum CustodianRelationshipStatus {
+  /// Link exists but has not been activated.
+  PENDING
+  /// Link is active.
+  ACTIVE
+  /// Link was revoked.
+  REVOKED
+  /// Invitation or request was declined.
+  DECLINED
+  /// Link or request expired.
+  EXPIRED
+}
+
+/// Invitation lifecycle for custodian-linking workflows.
+enum CustodianInvitationStatus {
+  /// Invitation is awaiting action.
+  PENDING
+  /// Invitation was accepted.
+  ACCEPTED
+  /// Invitation was declined.
+  DECLINED
+  /// Invitation was revoked.
+  REVOKED
+  /// Invitation expired before use.
+  EXPIRED
+}
+
+/// Direction and business meaning of a custodian invitation.
+enum CustodianInvitationType {
+  /// Custodian initiated the invite to a dependent.
+  CUSTODIAN_INVITES_DEPENDENT
+  /// Dependent initiated the invite to a custodian.
+  DEPENDENT_INVITES_CUSTODIAN
+  /// Existing custodian invited another custodian.
+  CUSTODIAN_ADDS_CUSTODIAN
+}
+
+/// Durable audit event type for delegated-account activity.
+enum DelegatedAccessEventType {
+  /// Custodian or delegate started an acting session.
+  SESSION_STARTED
+  /// Custodian or delegate ended an acting session.
+  SESSION_ENDED
+  /// Account view occurred under delegated access.
+  ACCOUNT_VIEWED
+  /// Settings changed under delegated access.
+  SETTINGS_UPDATED
+  /// Billing changed under delegated access.
+  BILLING_UPDATED
+  /// Custodian relationship changed under delegated access.
+  CUSTODIAN_RELATIONSHIP_UPDATED
+  /// Generic fallback for additional audited user actions.
+  USER_ACTION_EXECUTED
+}
+
+/// Membership row lifecycle shared by institutions and companies.
+enum OrganizationMembershipStatus {
+  /// Membership is pending acceptance or approval.
+  PENDING
+  /// Membership is active.
+  ACTIVE
+  /// Membership is suspended.
+  SUSPENDED
+  /// Membership is revoked.
+  REVOKED
+}
+
+/// Institution-scoped role labels.
+enum InstitutionMembershipRole {
+  /// Institution administrator.
+  ADMIN
+  /// Institution librarian.
+  LIBRARIAN
+  /// General staff operator.
+  STAFF
+  /// Instructor attached to the institution.
+  INSTRUCTOR
+  /// Billing administrator for the institution.
+  BILLING_ADMIN
+}
+
+/// Company-scoped role labels.
+enum CompanyMembershipRole {
+  /// Company administrator.
+  ADMIN
+  /// C-suite or executive operator.
+  C_SUITE
+  /// General company staff.
+  STAFF
+  /// Billing administrator for the company.
+  BILLING_ADMIN
+}
+
+/// Malware or trust scan state for file assets.
+enum FileScanStatus {
+  /// Scan has not completed.
+  PENDING
+  /// Asset was scanned and deemed clean.
+  CLEAN
+  /// Asset is blocked after scanning.
+  BLOCKED
+}
+
+/// Asset processing state for file assets.
+enum FileProcessingStatus {
+  /// Asset upload finished but processing has not started.
+  UPLOADED
+  /// Asset is currently processing.
+  PROCESSING
+  /// Asset is ready for use.
+  READY
+  /// Asset processing failed.
+  FAILED
+}
+
+/// Lifecycle state for a logical file record, separate from per-asset processing.
+enum FileLifecycleStatus {
+  /// File record exists but is still a draft/incomplete upload.
+  DRAFT
+  /// File is published and intended for user consumption.
+  PUBLISHED
+  /// File was retired from active circulation without deleting history.
+  ARCHIVED
+}
+
+/// Analytics event types retained as immutable history.
+enum EngagementEventType {
+  /// A view impression was recorded.
+  VIEW
+  /// A like action was recorded.
+  LIKE
+  /// A save/bookmark action was recorded.
+  SAVE
+  /// A rating event was recorded.
+  RATE
+  /// A completion event was recorded.
+  COMPLETE
+  /// A share intent or click was recorded.
+  SHARE_CLICK
+}
+
+/// Notification row lifecycle.
+enum NotificationStatus {
+  /// Notification has not been read.
+  UNREAD
+  /// Notification has been read.
+  READ
+  /// Notification was soft-deleted from the user experience.
+  DELETED
+}
+
+/// Supported material types for uploaded files.
+enum CourseMaterial {
+  /// Lecture notes or reference notes.
+  LECTURE_NOTES
+  /// Questions or exam-style paper.
+  QUESTIONS
+  /// Quiz material.
+  QUIZ
+  /// Lesson plan material.
+  LESSON_PLAN
+  /// Exercise material.
+  EXERCISE
+  /// Flashcard material.
+  FLASHCARD
+}
+
+/// Logical role of a binary asset attached to a file.
+enum FileAssetRole {
+  /// Main downloadable/viewable content asset.
+  PRIMARY_CONTENT
+  /// Visual thumbnail asset.
+  THUMBNAIL
+  /// Answer sheet asset, valid only for question material.
+  ANSWER_SHEET
+}
+
+/// Provenance of a file asset.
+enum FileAssetSource {
+  /// Uploaded by a user or operator.
+  UPLOADED
+  /// Generated by product-side processing.
+  GENERATED
+  /// Default/fallback asset supplied by the platform.
+  FALLBACK
+  /// Generated by an AI workflow.
+  AI_GENERATED
+}
+
+/// Provenance and usage kind for image assets.
+enum ImageAssetKind {
+  /// User-uploaded profile image.
+  USER_PROFILE_UPLOAD
+  /// Platform-provided avatar option.
+  PLATFORM_AVATAR
+  /// Platform-provided timeline cover image.
+  PLATFORM_TIMELINE_COVER
+  /// Platform-provided library cover image.
+  PLATFORM_LIBRARY_COVER
+}
+
+/// Core human account model anchored to Clerk but enriched with product-facing identity fields.
+model User {
+  /// Internal UUID primary key used across all relations.
+  id                         String                 @id @default(uuid()) @db.Uuid
+  /// Durable pointer to the canonical Clerk user identity.
+  clerkUserId                String                 @unique @map("clerk_user_id")
+  /// Optional product username for public identity, routing, and mention-style lookups.
+  username                   String?                @unique
+  /// Optional primary first/given name snapshot used by product UX.
+  firstName                  String?                @map("first_name")
+  /// Optional middle/additional name snapshot used by product UX.
+  otherName                  String?                @map("other_name")
+  /// Optional primary email snapshot for product querying and communication fallbacks.
+  primaryEmail               String?                @unique @map("primary_email")
+  /// High-level business classification for the user (mandatory and selected by user during onboarding).
+  accountType                UserAccountType        @map("account_type")
+  /// Platform-only administration scope.
+  administrativeRole         UserAdministrativeRole @default(NONE) @map("administrative_role")
+  /// Lifecycle state for the account.
+  status                     UserStatus             @default(ACTIVE)
+  /// Suspension timestamp when the account is blocked.
+  suspendedAt                DateTime?              @map("suspended_at") @db.Timestamptz(6)
+  /// Human-readable reason for account suspension.
+  suspensionReason           String?                @map("suspension_reason")
+  /// Business verification flag used across product workflows.
+  isVerified                 Boolean                @default(false) @map("is_verified")
+  /// Current creator privilege state.
+  creatorStatus              CreatorStatus          @default(NOT_APPLIED) @map("creator_status")
+  /// Timestamp when creator privileges were suspended.
+  creatorSuspendedAt         DateTime?              @map("creator_suspended_at") @db.Timestamptz(6)
+  /// Optional suspension expiry for creator privileges.
+  creatorSuspensionExpiresAt DateTime?              @map("creator_suspension_expires_at") @db.Timestamptz(6)
+  /// Reason for creator suspension.
+  creatorSuspensionReason    String?                @map("creator_suspension_reason")
+  /// Timestamp when creator privileges were revoked.
+  creatorRevokedAt           DateTime?              @map("creator_revoked_at") @db.Timestamptz(6)
+  /// Reason for creator revocation.
+  creatorRevocationReason    String?                @map("creator_revocation_reason")
+  /// Coarse onboarding progress indicator.
+  onboardingStatus           OnboardingStatus       @default(NOT_STARTED) @map("onboarding_status")
+  /// Date of birth used by dependency/age policy.
+  birthDate                  DateTime?              @map("birth_date") @db.Date
+  /// Derived minor snapshot used for fast policy filtering.
+  isMinor                    Boolean                @default(false) @map("is_minor")
+  /// Dependency state for custodian policy.
+  dependencyStatus           DependencyStatus       @default(INDEPENDENT) @map("dependency_status")
+  /// Timestamp of the most recent dependency-state change.
+  dependencyStatusUpdatedAt  DateTime?              @map("dependency_status_updated_at") @db.Timestamptz(6)
+  /// Time the user becomes eligible for independence under policy.
+  independenceEligibleAt     DateTime?              @map("independence_eligible_at") @db.Timestamptz(6)
+  /// Time the user actually became independent.
+  becameIndependentAt        DateTime?              @map("became_independent_at") @db.Timestamptz(6)
+  /// Last seen activity timestamp for analytics/support.
+  lastActiveAt               DateTime?              @map("last_active_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt                  DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp maintained automatically by Prisma.
+  updatedAt                  DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// Soft-delete timestamp for preserving historical references.
+  deletedAt                  DateTime?              @map("deleted_at") @db.Timestamptz(6)
+
+  /// One-to-one profile with geo and institution context.
+  profile                               UserProfile?
+  /// Historical creator application submissions.
+  creatorApplications                   CreatorApplication[]
+  /// Libraries owned directly by this user.
+  ownedLibraries                        Library[]                 @relation("UserOwnedLibraries")
+  /// Access grants this user has received.
+  libraryAccesses                       LibraryAccess[]           @relation("LibraryAccessUser")
+  /// Access grants this user issued to others.
+  libraryAccessesGranted                LibraryAccess[]           @relation("LibraryAccessGrantedBy")
+  /// Platform subscriptions where this user benefits from the entitlement.
+  platformSubscriptionsBenefiting       PlatformSubscription[]    @relation("PlatformSubscriptionBeneficiary")
+  /// Platform subscriptions where this user is the payer.
+  platformSubscriptionsPaying           PlatformSubscription[]    @relation("PlatformSubscriptionPayer")
+  /// Platform subscriptions where this user operationally managed billing.
+  platformSubscriptionsManaged          PlatformSubscription[]    @relation("PlatformSubscriptionManagedBy")
+  /// Library subscriptions where this user benefits from the entitlement.
+  premiumLibrarySubscriptionsBenefiting PaidLibrarySubscription[] @relation("PaidLibrarySubscriptionBeneficiary")
+  /// Library subscriptions where this user is the payer.
+  premiumLibrarySubscriptionsPaying     PaidLibrarySubscription[] @relation("PaidLibrarySubscriptionPayer")
+  /// Library subscriptions where this user managed the billing action.
+  premiumLibrarySubscriptionsManaged    PaidLibrarySubscription[] @relation("PaidLibrarySubscriptionManagedBy")
+  /// File records uploaded by this user.
+  uploadedFiles                         File[]                    @relation("FileUploader")
+  /// Ratings authored by this user.
+  ratings                               Rating[]
+  /// Engagement events attributed to this user.
+  engagementEvents                      EngagementEvent[]
+  /// Notifications delivered to this user.
+  notifications                         Notification[]
+  /// Curriculum choices selected by this user.
+  selectedCurricula                     UserSelectedCurriculum[]
+  /// Image assets uploaded by this user.
+  uploadedImageAssets                   ImageAsset[]              @relation("ImageAssetUploader")
+  /// Custodian relationships where this user is the dependent.
+  dependentCustodianRelationships       CustodianRelationship[]   @relation("DependentCustodianRelationships")
+  /// Custodian relationships where this user is the custodian.
+  custodianDependentRelationships       CustodianRelationship[]   @relation("CustodianDependentRelationships")
+  /// Custodian invitations sent by this user.
+  sentCustodianInvitations              CustodianInvitation[]     @relation("CustodianInvitationInviter")
+  /// Custodian invitations addressed to this user.
+  receivedCustodianInvitations          CustodianInvitation[]     @relation("CustodianInvitationRecipient")
+  /// Custodian invitations attached to this dependent user.
+  dependentCustodianInvitations         CustodianInvitation[]     @relation("CustodianInvitationDependent")
+  /// Invitations this user accepted.
+  acceptedCustodianInvitations          CustodianInvitation[]     @relation("CustodianInvitationAcceptedBy")
+  /// Invitations this user revoked.
+  revokedCustodianInvitations           CustodianInvitation[]     @relation("CustodianInvitationRevokedBy")
+  /// Custodian relationships linked/created by this user.
+  custodianRelationshipsLinked          CustodianRelationship[]   @relation("CustodianRelationshipLinkedBy")
+  /// Delegated-access audit rows where this user is the real actor.
+  delegatedAccessEventsAsActor          DelegatedAccessAudit[]    @relation("DelegatedAccessActor")
+  /// Delegated-access audit rows where this user is the effective account.
+  delegatedAccessEventsAsEffectiveUser  DelegatedAccessAudit[]    @relation("DelegatedAccessEffectiveUser")
+  /// Institution memberships held by this user.
+  institutionMemberships                InstitutionMembership[]   @relation("InstitutionMembershipUser")
+  /// Institution memberships this user invited.
+  institutionMembershipsInvited         InstitutionMembership[]   @relation("InstitutionMembershipInvitedBy")
+  /// Company memberships held by this user.
+  companyMemberships                    CompanyMembership[]       @relation("CompanyMembershipUser")
+  /// Company memberships this user invited.
+  companyMembershipsInvited             CompanyMembership[]       @relation("CompanyMembershipInvitedBy")
+
+  /// Multi-column filter path for user admin/moderation dashboards.
+  @@index([accountType, dependencyStatus, isMinor, isVerified, creatorStatus], map: "idx_users_account_type_dependency_minor_verified_creator")
+  /// Supports platform-admin and status filtering.
+  @@index([administrativeRole, status], map: "idx_users_administrative_role_status")
+  /// Supports active-user recency lists.
+  @@index([status, lastActiveAt], map: "idx_users_status_last_active")
+  /// Supports lookups by active product email snapshot when present.
+  @@index([primaryEmail], map: "idx_users_primary_email")
+  /// Supports public profile routing and lookup by username.
+  @@index([username], map: "idx_users_username")
+  /// Supports soft-delete aware user filtering.
+  @@index([deletedAt, status], map: "idx_users_deleted_at_status")
+  /// Map this model to the existing users table.
+  @@map("users")
+}
+
+/// One-to-one user profile holding location and institution context distinct from core auth identity.
+model UserProfile {
+  /// Shares the same primary key as the parent user row.
+  userId                   String               @id @map("user_id") @db.Uuid
+  /// Optional gender selection.
+  gender                   Gender?
+  /// ISO-3166 alpha-2 country code.
+  countryCode              String               @map("country_code") @db.Char(2)
+  /// State code within the selected country.
+  stateCode                String?              @map("state_code")
+  /// County code within the selected state.
+  countyCode               String?              @map("county_code")
+  /// Institution category snapshot captured from the user context.
+  institutionCategory      InstitutionCategory? @map("institution_category")
+  /// Institution level snapshot captured from the user context.
+  institutionLevel         InstitutionLevel?    @map("institution_level")
+  /// Optional institution currently associated with the profile.
+  institutionId            String?              @map("institution_id") @db.Uuid
+  /// Profile completeness score used for onboarding and nudges.
+  profileCompletionPercent Int                  @default(0) @map("profile_completion_percent") @db.SmallInt
+  /// Creation timestamp.
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt                DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Back-reference to the owning user row.
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Country used for geo hierarchy and pricing context.
+  country     Country      @relation(fields: [countryCode], references: [iso2])
+  /// Institution currently attached to the profile, if any.
+  institution Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  /// Supports country-based profile reporting.
+  @@index([countryCode], map: "idx_user_profiles_country")
+  /// Supports state filtering in regional lists.
+  @@index([countryCode, stateCode], map: "idx_user_profiles_country_state")
+  /// Supports institution member/profile lookups.
+  @@index([institutionId], map: "idx_user_profiles_institution")
+  /// Map this model to the existing user_profiles table.
+  @@map("user_profiles")
+}
+
+/// User-selected curriculum preferences for personalization and defaults.
+model UserSelectedCurriculum {
+  /// Surrogate UUID primary key for the selection row.
+  id             String         @id @default(uuid()) @db.Uuid
+  /// Owning user.
+  userId         String         @map("user_id") @db.Uuid
+  /// Chosen curriculum.
+  curriculumCode CurriculumCode @map("curriculum_code")
+  /// Whether this is the user's primary curriculum.
+  isPrimary      Boolean        @default(false) @map("is_primary")
+  /// Creation timestamp.
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Owning user relation.
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Curriculum reference relation.
+  curriculum Curriculum @relation(fields: [curriculumCode], references: [code], onDelete: Restrict)
+
+  /// Prevents duplicate selections of the same curriculum by one user.
+  @@unique([userId, curriculumCode], map: "uq_user_selected_curricula_user_curriculum")
+  /// Supports quick discovery of the user's primary curriculum.
+  @@index([userId, isPrimary], map: "idx_user_selected_curricula_user_primary")
+  /// Map this model to the existing user_selected_curricula table.
+  @@map("user_selected_curricula")
+}
+
+/// Relationship row connecting a dependent to a custodian with granular delegated permissions.
+model CustodianRelationship {
+  /// Internal UUID primary key.
+  id                  String                      @id @default(uuid()) @db.Uuid
+  /// Dependent user in the relationship.
+  dependentUserId     String                      @map("dependent_user_id") @db.Uuid
+  /// Custodian user in the relationship.
+  custodianUserId     String                      @map("custodian_user_id") @db.Uuid
+  /// Optional actor who linked the relationship.
+  linkedByUserId      String?                     @map("linked_by_user_id") @db.Uuid
+  /// Optional invitation that created the relationship.
+  invitationId        String?                     @unique @map("invitation_id") @db.Uuid
+  /// Current lifecycle state.
+  status              CustodianRelationshipStatus @default(PENDING)
+  /// Allows account-level management.
+  canManageAccount    Boolean                     @default(false) @map("can_manage_account")
+  /// Allows acting as the dependent.
+  canActAsDependent   Boolean                     @default(false) @map("can_act_as_dependent")
+  /// Allows settings management.
+  canManageSettings   Boolean                     @default(false) @map("can_manage_settings")
+  /// Allows billing management.
+  canManageBilling    Boolean                     @default(false) @map("can_manage_billing")
+  /// Allows viewing dependent activity.
+  canViewActivity     Boolean                     @default(true) @map("can_view_activity")
+  /// Allows managing other custodians.
+  canManageCustodians Boolean                     @default(false) @map("can_manage_custodians")
+  /// Timestamp when the link became active.
+  linkedAt            DateTime?                   @map("linked_at") @db.Timestamptz(6)
+  /// Timestamp when the link was revoked.
+  revokedAt           DateTime?                   @map("revoked_at") @db.Timestamptz(6)
+  /// Human-readable reason for revocation.
+  revokedReason       String?                     @map("revoked_reason")
+  /// Creation timestamp.
+  createdAt           DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt           DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Relation to the dependent user.
+  dependentUser         User                   @relation("DependentCustodianRelationships", fields: [dependentUserId], references: [id], onDelete: Cascade)
+  /// Relation to the custodian user.
+  custodianUser         User                   @relation("CustodianDependentRelationships", fields: [custodianUserId], references: [id], onDelete: Cascade)
+  /// Optional relation to the actor who linked the pair.
+  linkedBy              User?                  @relation("CustodianRelationshipLinkedBy", fields: [linkedByUserId], references: [id], onDelete: SetNull)
+  /// Optional originating invitation.
+  invitation            CustodianInvitation?   @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  /// Audit rows produced while operating through this relationship.
+  delegatedAccessAudits DelegatedAccessAudit[]
+
+  /// Supports active dependent-side lookups.
+  @@index([dependentUserId, status], map: "idx_custodian_relationships_dependent_status")
+  /// Supports active custodian-side lookups.
+  @@index([custodianUserId, status], map: "idx_custodian_relationships_custodian_status")
+  /// Supports relationship lifecycle reporting.
+  @@index([status, linkedAt], map: "idx_custodian_relationships_status_linked_at")
+  /// Map this model to the existing custodian_relationships table.
+  @@map("custodian_relationships")
+}
+
+/// Invitation row supporting secure custodian-linking workflows before activation.
+model CustodianInvitation {
+  /// Internal UUID primary key.
+  id                  String                    @id @default(uuid()) @db.Uuid
+  /// Direction and semantics of the invitation.
+  invitationType      CustodianInvitationType   @map("invitation_type")
+  /// User who initiated the invite.
+  inviterUserId       String                    @map("inviter_user_id") @db.Uuid
+  /// Dependent attached to the invite.
+  dependentUserId     String                    @map("dependent_user_id") @db.Uuid
+  /// Optional recipient user if already known.
+  recipientUserId     String?                   @map("recipient_user_id") @db.Uuid
+  /// Optional recipient email snapshot when a user row does not yet exist.
+  recipientEmail      String?                   @map("recipient_email")
+  /// Hashed invitation token; raw token must never be stored.
+  tokenHash           String                    @unique @map("token_hash")
+  /// Current invitation lifecycle state.
+  status              CustodianInvitationStatus @default(PENDING)
+  /// Default permission bundle copied to the resulting relationship.
+  canManageAccount    Boolean                   @default(false) @map("can_manage_account")
+  /// Default act-as-dependent permission copied to the relationship.
+  canActAsDependent   Boolean                   @default(false) @map("can_act_as_dependent")
+  /// Default manage-settings permission copied to the relationship.
+  canManageSettings   Boolean                   @default(false) @map("can_manage_settings")
+  /// Default manage-billing permission copied to the relationship.
+  canManageBilling    Boolean                   @default(false) @map("can_manage_billing")
+  /// Default activity-view permission copied to the relationship.
+  canViewActivity     Boolean                   @default(true) @map("can_view_activity")
+  /// Default manage-custodians permission copied to the relationship.
+  canManageCustodians Boolean                   @default(false) @map("can_manage_custodians")
+  /// Hard expiry for the invite.
+  expiresAt           DateTime                  @map("expires_at") @db.Timestamptz(6)
+  /// Acceptance timestamp.
+  acceptedAt          DateTime?                 @map("accepted_at") @db.Timestamptz(6)
+  /// User who accepted the invite.
+  acceptedByUserId    String?                   @map("accepted_by_user_id") @db.Uuid
+  /// Revocation timestamp.
+  revokedAt           DateTime?                 @map("revoked_at") @db.Timestamptz(6)
+  /// User who revoked the invite.
+  revokedByUserId     String?                   @map("revoked_by_user_id") @db.Uuid
+  /// Creation timestamp.
+  createdAt           DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt           DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Relation to the inviting user.
+  inviterUser   User                   @relation("CustodianInvitationInviter", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  /// Relation to the dependent user.
+  dependentUser User                   @relation("CustodianInvitationDependent", fields: [dependentUserId], references: [id], onDelete: Cascade)
+  /// Optional relation to the intended recipient user.
+  recipientUser User?                  @relation("CustodianInvitationRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  /// Optional relation to the accepting user.
+  acceptedBy    User?                  @relation("CustodianInvitationAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  /// Optional relation to the revoking user.
+  revokedBy     User?                  @relation("CustodianInvitationRevokedBy", fields: [revokedByUserId], references: [id], onDelete: SetNull)
+  /// Optional one-to-one relationship created from this invitation.
+  relationship  CustodianRelationship?
+
+  /// Supports dependent-side invitation inbox views.
+  @@index([dependentUserId, status, expiresAt], map: "idx_custodian_invitations_dependent_status_exp")
+  /// Supports recipient-user invitation inbox views.
+  @@index([recipientUserId, status, expiresAt], map: "idx_custodian_invitations_recipient_status_exp")
+  /// Supports email-based invitation claiming.
+  @@index([recipientEmail, status, expiresAt], map: "idx_custodian_invitations_email_status_exp")
+  /// Supports inviter-side invitation history.
+  @@index([inviterUserId, status, createdAt], map: "idx_custodian_invitations_inviter_status_created")
+  /// Map this model to the existing custodian_invitations table.
+  @@map("custodian_invitations")
+}
+
+/// Durable audit log of delegated actions where one user accesses another user's context.
+model DelegatedAccessAudit {
+  /// Internal UUID primary key.
+  id                      String                   @id @default(uuid()) @db.Uuid
+  /// Real signed-in actor.
+  actorUserId             String                   @map("actor_user_id") @db.Uuid
+  /// Effective account being accessed.
+  effectiveUserId         String                   @map("effective_user_id") @db.Uuid
+  /// Optional relationship through which access was granted.
+  custodianRelationshipId String?                  @map("custodian_relationship_id") @db.Uuid
+  /// Event type describing what happened.
+  eventType               DelegatedAccessEventType @map("event_type")
+  /// Optional target entity type for generic audit use.
+  targetEntityType        String?                  @map("target_entity_type")
+  /// Optional target entity id for generic audit use.
+  targetEntityId          String?                  @map("target_entity_id")
+  /// Structured metadata for the event.
+  metadata                Json?                    @map("metadata")
+  /// Request IP address if captured.
+  ipAddress               String?                  @map("ip_address") @db.Inet
+  /// User agent snapshot if captured.
+  userAgent               String?                  @map("user_agent")
+  /// Creation timestamp.
+  createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Relation to the real acting user.
+  actorUser             User                   @relation("DelegatedAccessActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  /// Relation to the effective user account.
+  effectiveUser         User                   @relation("DelegatedAccessEffectiveUser", fields: [effectiveUserId], references: [id], onDelete: Cascade)
+  /// Optional relation to the authorizing custodian link.
+  custodianRelationship CustodianRelationship? @relation(fields: [custodianRelationshipId], references: [id], onDelete: SetNull)
+
+  /// Supports actor-side audit review.
+  @@index([actorUserId, createdAt], map: "idx_delegated_access_actor_created")
+  /// Supports effective-user audit review.
+  @@index([effectiveUserId, createdAt], map: "idx_delegated_access_effective_created")
+  /// Supports relationship audit lookups.
+  @@index([custodianRelationshipId, createdAt], map: "idx_delegated_access_relationship_created")
+  /// Supports event-type reporting.
+  @@index([eventType, createdAt], map: "idx_delegated_access_event_created")
+  /// Map this model to the existing delegated_access_audits table.
+  @@map("delegated_access_audits")
+}
+
+/// Membership row granting a user scoped access inside an institution.
+model InstitutionMembership {
+  /// Internal UUID primary key.
+  id                   String                       @id @default(uuid()) @db.Uuid
+  /// Institution being joined.
+  institutionId        String                       @map("institution_id") @db.Uuid
+  /// User receiving the membership.
+  userId               String                       @map("user_id") @db.Uuid
+  /// Optional inviter who created the membership.
+  invitedByUserId      String?                      @map("invited_by_user_id") @db.Uuid
+  /// Business role label for the institution membership.
+  role                 InstitutionMembershipRole
+  /// Lifecycle state of the membership.
+  status               OrganizationMembershipStatus @default(PENDING)
+  /// Optional human-readable title.
+  title                String?
+  /// Permission to manage institution settings.
+  canManageInstitution Boolean                      @default(false) @map("can_manage_institution")
+  /// Permission to manage billing.
+  canManageBilling     Boolean                      @default(false) @map("can_manage_billing")
+  /// Permission to manage other members.
+  canManageMembers     Boolean                      @default(false) @map("can_manage_members")
+  /// Permission to manage institution libraries.
+  canManageLibraries   Boolean                      @default(false) @map("can_manage_libraries")
+  /// Timestamp when the membership became active.
+  joinedAt             DateTime?                    @map("joined_at") @db.Timestamptz(6)
+  /// Timestamp when the membership was revoked.
+  revokedAt            DateTime?                    @map("revoked_at") @db.Timestamptz(6)
+  /// Optional reason for revocation.
+  revokedReason        String?                      @map("revoked_reason")
+  /// Creation timestamp.
+  createdAt            DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt            DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Owning institution relation.
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  /// Member user relation.
+  user        User        @relation("InstitutionMembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  /// Inviter relation.
+  invitedBy   User?       @relation("InstitutionMembershipInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  /// Prevents duplicate memberships per institution/user pair.
+  @@unique([institutionId, userId], map: "uq_institution_memberships_institution_user")
+  /// Supports user-centric institution membership listing.
+  @@index([userId, status], map: "idx_institution_memberships_user_status")
+  /// Supports institution member management by status and role.
+  @@index([institutionId, status, role], map: "idx_institution_memberships_institution_status_role")
+  /// Map this model to the existing institution_memberships table.
+  @@map("institution_memberships")
+}
+
+/// Membership row granting a user scoped access inside a company.
+model CompanyMembership {
+  /// Internal UUID primary key.
+  id                    String                       @id @default(uuid()) @db.Uuid
+  /// Company being joined.
+  companyId             String                       @map("company_id") @db.Uuid
+  /// User receiving the membership.
+  userId                String                       @map("user_id") @db.Uuid
+  /// Optional inviter who created the membership.
+  invitedByUserId       String?                      @map("invited_by_user_id") @db.Uuid
+  /// Business role label for the company membership.
+  role                  CompanyMembershipRole
+  /// Lifecycle state of the membership.
+  status                OrganizationMembershipStatus @default(PENDING)
+  /// Optional human-readable title.
+  title                 String?
+  /// Permission to manage company settings.
+  canManageCompany      Boolean                      @default(false) @map("can_manage_company")
+  /// Permission to manage company billing.
+  canManageBilling      Boolean                      @default(false) @map("can_manage_billing")
+  /// Permission to manage company members.
+  canManageMembers      Boolean                      @default(false) @map("can_manage_members")
+  /// Permission to manage company institutions.
+  canManageInstitutions Boolean                      @default(false) @map("can_manage_institutions")
+  /// Timestamp when the membership became active.
+  joinedAt              DateTime?                    @map("joined_at") @db.Timestamptz(6)
+  /// Timestamp when the membership was revoked.
+  revokedAt             DateTime?                    @map("revoked_at") @db.Timestamptz(6)
+  /// Optional reason for revocation.
+  revokedReason         String?                      @map("revoked_reason")
+  /// Creation timestamp.
+  createdAt             DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt             DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Owning company relation.
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Member user relation.
+  user      User    @relation("CompanyMembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  /// Inviter relation.
+  invitedBy User?   @relation("CompanyMembershipInvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  /// Prevents duplicate memberships per company/user pair.
+  @@unique([companyId, userId], map: "uq_company_memberships_company_user")
+  /// Supports user-centric company membership listing.
+  @@index([userId, status], map: "idx_company_memberships_user_status")
+  /// Supports company member management by status and role.
+  @@index([companyId, status, role], map: "idx_company_memberships_company_status_role")
+  /// Map this model to the existing company_memberships table.
+  @@map("company_memberships")
+}
+
+/// Creator application submitted by a user seeking creator privileges.
+model CreatorApplication {
+  /// Internal UUID primary key.
+  id           String                   @id @default(uuid()) @db.Uuid
+  /// Applicant user.
+  userId       String                   @map("user_id") @db.Uuid
+  /// Review status for the application.
+  status       CreatorApplicationStatus
+  /// Government ID snapshot/reference.
+  governmentId String                   @map("government_id")
+  /// Tax ID snapshot/reference.
+  taxId        String                   @map("tax_id")
+  /// Optional phone number used during review.
+  phoneNumber  String?                  @map("phone_number")
+  /// Optional review notes.
+  reviewNotes  String?                  @map("review_notes")
+  /// Submission timestamp.
+  submittedAt  DateTime?                @map("submitted_at") @db.Timestamptz(6)
+  /// Review completion timestamp.
+  reviewedAt   DateTime?                @map("reviewed_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt    DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Applicant relation.
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  /// Supports applicant history and moderation filters.
+  @@index([userId, status], map: "idx_creator_apps_user_status")
+  /// Map this model to the existing creator_applications table.
+  @@map("creator_applications")
+}
+
+/// Canonical curriculum dimension referenced by user selections, institutions, and library taxonomy.
+model Curriculum {
+  /// Stable curriculum code primary key.
+  code        CurriculumCode @id
+  /// Human-readable curriculum name.
+  name        String
+  /// Exam system paired with the curriculum.
+  examSystems ExamSystems    @map("exam_systems")
+  /// Creation timestamp.
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Levels that belong to this curriculum.
+  levels               CurriculumLevel[]
+  /// User selections pointing at this curriculum.
+  userSelections       UserSelectedCurriculum[]
+  /// Institutions offering this curriculum.
+  institutionOfferings InstitutionCurriculum[]
+
+  /// Map this model to the existing curricula table.
+  @@map("curricula")
+}
+
+/// Curriculum level dimension used by libraries and normalized subject trees.
+model CurriculumLevel {
+  /// Internal UUID primary key.
+  id             String              @id @default(uuid()) @db.Uuid
+  /// Parent curriculum.
+  curriculumCode CurriculumCode      @map("curriculum_code")
+  /// Stable curriculum-level code.
+  code           String
+  /// Human-readable curriculum-level name.
+  name           String
+  /// Sort order within the curriculum.
+  sortOrder      Int                 @map("sort_order")
+  /// Broad type indicating K-12 versus higher education rules.
+  levelType      CurriculumLevelType @default(K12) @map("level_type")
+  /// Creation timestamp.
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent curriculum relation.
+  curriculum Curriculum        @relation(fields: [curriculumCode], references: [code], onDelete: Restrict)
+  /// Grades under this level.
+  grades     CurriculumGrade[]
+  /// Libraries attached to this level.
+  libraries  Library[]
+  /// Subjects available under this level.
+  subjects   Subject[]
+
+  /// Prevents duplicate level codes within one curriculum.
+  @@unique([curriculumCode, code], map: "uq_curriculum_levels_curriculum_code")
+  /// Supports ordered level browsing by curriculum.
+  @@index([curriculumCode, sortOrder], map: "idx_curriculum_levels_curriculum_sort")
+  /// Supports K-12 versus HE filtering.
+  @@index([levelType, curriculumCode], map: "idx_curriculum_levels_type_curriculum")
+  /// Map this model to the existing curriculum_levels table.
+  @@map("curriculum_levels")
+}
+
+/// Grade dimension nested under a curriculum level.
+model CurriculumGrade {
+  /// Internal UUID primary key.
+  id                String   @id @default(uuid()) @db.Uuid
+  /// Parent curriculum level.
+  curriculumLevelId String   @map("curriculum_level_id") @db.Uuid
+  /// Stable grade code.
+  code              String
+  /// Human-readable grade name.
+  name              String
+  /// Sort order within the curriculum level.
+  sortOrder         Int      @map("sort_order")
+  /// Creation timestamp.
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent curriculum level relation.
+  curriculumLevel          CurriculumLevel           @relation(fields: [curriculumLevelId], references: [id], onDelete: Cascade)
+  /// Chapters that are grade-specific.
+  chapters                 Chapter[]
+  /// File classification join rows referencing this grade.
+  fileClassificationGrades FileClassificationGrade[]
+
+  /// Prevents duplicate grade codes within a level.
+  @@unique([curriculumLevelId, code], map: "uq_curriculum_grades_level_code")
+  /// Supports ordered grade browsing.
+  @@index([curriculumLevelId, sortOrder], map: "idx_curriculum_grades_level_sort")
+  /// Map this model to the existing curriculum_grades table.
+  @@map("curriculum_grades")
+}
+
+/// Subject taxonomy node nested under a curriculum level.
+model Subject {
+  /// Internal UUID primary key.
+  id                String   @id @default(uuid()) @db.Uuid
+  /// Parent curriculum level.
+  curriculumLevelId String   @map("curriculum_level_id") @db.Uuid
+  /// Stable subject code.
+  code              String
+  /// Human-readable subject name.
+  name              String
+  /// Optional subject slug for frontend routing and SEO-friendly URLs.
+  slug              String?  @unique
+  /// Optional sort order within the curriculum level.
+  sortOrder         Int?     @map("sort_order")
+  /// Creation timestamp.
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent curriculum level relation.
+  curriculumLevel     CurriculumLevel      @relation(fields: [curriculumLevelId], references: [id], onDelete: Cascade)
+  /// Chapters under this subject.
+  chapters            Chapter[]
+  /// File classifications anchored to this subject.
+  fileClassifications FileClassification[]
+
+  /// Prevents duplicate subject codes within a curriculum level.
+  @@unique([curriculumLevelId, code], map: "uq_subjects_curriculum_level_code")
+  /// Prevents duplicate subject names within a curriculum level.
+  @@unique([curriculumLevelId, name], map: "uq_subjects_curriculum_level_name")
+  /// Supports ordered subject browsing.
+  @@index([curriculumLevelId, sortOrder], map: "idx_subjects_curriculum_level_sort")
+  /// Supports slug lookups while backfill remains nullable.
+  @@index([slug], map: "idx_subjects_slug")
+  /// Map this model to the existing subjects table.
+  @@map("subjects")
+}
+
+/// Chapter taxonomy node nested under a subject and optionally scoped to a grade.
+model Chapter {
+  /// Internal UUID primary key.
+  id                String   @id @default(uuid()) @db.Uuid
+  /// Parent subject.
+  subjectId         String   @map("subject_id") @db.Uuid
+  /// Optional grade scope; null means the chapter applies across grades.
+  curriculumGradeId String?  @map("curriculum_grade_id") @db.Uuid
+  /// Stable chapter code.
+  code              String
+  /// Human-readable chapter name.
+  name              String
+  /// Optional sort order within the subject.
+  sortOrder         Int?     @map("sort_order")
+  /// Creation timestamp.
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent subject relation.
+  subject                    Subject                     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  /// Optional grade relation for grade-specific chapters.
+  curriculumGrade            CurriculumGrade?            @relation(fields: [curriculumGradeId], references: [id], onDelete: SetNull)
+  /// Topics under this chapter.
+  topics                     Topic[]
+  /// File classification join rows referencing this chapter.
+  fileClassificationChapters FileClassificationChapter[]
+
+  /// Prevents duplicate chapter codes within the same subject/grade combination.
+  @@unique([subjectId, curriculumGradeId, code], map: "uq_chapters_subject_grade_code")
+  /// Supports ordered chapter browsing per subject.
+  @@index([subjectId, sortOrder], map: "idx_chapters_subject_sort")
+  /// Map this model to the existing chapters table.
+  @@map("chapters")
+}
+
+/// Topic taxonomy node nested under a chapter.
+model Topic {
+  /// Internal UUID primary key.
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Parent chapter.
+  chapterId String   @map("chapter_id") @db.Uuid
+  /// Stable topic code.
+  code      String
+  /// Human-readable topic name.
+  name      String
+  /// Optional sort order within the chapter.
+  sortOrder Int?     @map("sort_order")
+  /// Creation timestamp.
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent chapter relation.
+  chapter                  Chapter                   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  /// File classification join rows referencing this topic.
+  fileClassificationTopics FileClassificationTopic[]
+
+  /// Prevents duplicate topic codes within a chapter.
+  @@unique([chapterId, code], map: "uq_topics_chapter_code")
+  /// Supports ordered topic browsing.
+  @@index([chapterId, sortOrder], map: "idx_topics_chapter_sort")
+  /// Map this model to the existing topics table.
+  @@map("topics")
+}
+
+/// Library container owned by either a user or an institution, never both at the same time.
+model Library {
+  /// Internal UUID primary key.
+  id                 String            @id @default(uuid()) @db.Uuid
+  /// Direct user owner when the library is user-owned.
+  ownerUserId        String?           @map("owner_user_id") @db.Uuid
+  /// Institution owner when the library is institution-owned.
+  ownerInstitutionId String?           @map("owner_institution_id") @db.Uuid
+  /// Curriculum level that governs taxonomy and classification rules.
+  curriculumLevelId  String            @map("curriculum_level_id") @db.Uuid
+  /// User-facing library title.
+  title              String
+  /// Optional user-facing slug for routing and public URLs.
+  slug               String?           @unique
+  /// Optional description.
+  description        String?
+  /// Visibility state, distinct from access-grant rows.
+  visibility         LibraryVisibility
+  /// Publication flag for discoverability and listing behavior.
+  isPublished        Boolean           @default(false) @map("is_published")
+  /// Denormalized aggregate view count used for fast sorting and recommendations.
+  viewCount          Int               @default(0) @map("view_count")
+  /// Denormalized aggregate like count used for fast ranking.
+  likeCount          Int               @default(0) @map("like_count")
+  /// Denormalized aggregate share count used for fast ranking.
+  shareCount         Int               @default(0) @map("share_count")
+  /// Soft-delete timestamp.
+  deletedAt          DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// User-owner relation for personal libraries.
+  ownerUser         User?                     @relation("UserOwnedLibraries", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  /// Institution-owner relation for institution libraries.
+  ownerInstitution  Institution?              @relation("InstitutionOwnedLibraries", fields: [ownerInstitutionId], references: [id], onDelete: Restrict)
+  /// Curriculum level relation.
+  curriculumLevel   CurriculumLevel           @relation(fields: [curriculumLevelId], references: [id], onDelete: Restrict)
+  /// Explicit access grant rows.
+  accessGrants      LibraryAccess[]
+  /// Premium pricing history rows.
+  premiumPrices     PremiumLibraryPrice[]
+  /// Library-specific subscription rows.
+  paidSubscriptions PaidLibrarySubscription[]
+  /// Files contained in the library.
+  files             File[]
+  /// Ratings authored against the library.
+  ratings           Rating[]
+  /// Immutable engagement history attached to the library.
+  engagementEvents  EngagementEvent[]
+
+  /// Supports user-owned library listing/filtering.
+  @@index([ownerUserId, visibility, isPublished], map: "idx_libraries_owner_user_visibility_published")
+  /// Supports institution-owned library listing/filtering.
+  @@index([ownerInstitutionId, visibility, isPublished], map: "idx_libraries_owner_institution_visibility_published")
+  /// Supports curriculum + visibility exploration.
+  @@index([curriculumLevelId, visibility], map: "idx_libraries_curriculum_level_visibility")
+  /// Supports soft-delete aware ownership queries.
+  @@index([deletedAt, ownerUserId, ownerInstitutionId], map: "idx_libraries_deleted_owner")
+  /// Supports fast sorting for trending library lists.
+  @@index([visibility, isPublished, viewCount], map: "idx_libraries_visibility_published_view_count")
+  /// Supports slug-based lookup while backfill remains nullable.
+  @@index([slug], map: "idx_libraries_slug")
+  /// Map this model to the existing libraries table.
+  @@map("libraries")
+}
+
+/// Versioned premium pricing rows for libraries.
+model PremiumLibraryPrice {
+  /// Internal UUID primary key.
+  id           String    @id @default(uuid()) @db.Uuid
+  /// Library being priced.
+  libraryId    String    @map("library_id") @db.Uuid
+  /// Price in minor currency units.
+  priceCents   Int       @map("price_cents")
+  /// ISO-4217 currency code.
+  currencyCode String    @map("currency_code") @db.Char(3)
+  /// Price start timestamp.
+  startsAt     DateTime  @map("starts_at") @db.Timestamptz(6)
+  /// Optional price end timestamp; null means currently active.
+  endsAt       DateTime? @map("ends_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Library relation.
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Restrict)
+
+  /// Supports active-price resolution by library and time window.
+  @@index([libraryId, startsAt, endsAt], map: "idx_premium_library_prices_library_window")
+  /// Map this model to the existing premium_library_prices table.
+  @@map("premium_library_prices")
+}
+
+/// Explicit access grant independent of the library visibility setting.
+model LibraryAccess {
+  /// Internal UUID primary key.
+  id              String              @id @default(uuid()) @db.Uuid
+  /// Library being shared.
+  libraryId       String              @map("library_id") @db.Uuid
+  /// User receiving the grant.
+  userId          String              @map("user_id") @db.Uuid
+  /// Permission type granted.
+  accessType      LibraryAccessType   @map("access_type")
+  /// Lifecycle state of the grant.
+  status          LibraryAccessStatus @default(PENDING)
+  /// User who granted the access.
+  grantedByUserId String              @map("granted_by_user_id") @db.Uuid
+  /// Optional expiration time for the grant.
+  expiresAt       DateTime?           @map("expires_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Library relation.
+  library   Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  /// Recipient user relation.
+  user      User    @relation("LibraryAccessUser", fields: [userId], references: [id], onDelete: Cascade)
+  /// Granting user relation.
+  grantedBy User    @relation("LibraryAccessGrantedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+
+  /// One grant row per library/user pair.
+  @@unique([libraryId, userId], map: "uq_library_access_library_user")
+  /// Supports entitlement checks by recipient, library, status, and expiry.
+  @@index([userId, libraryId, status, expiresAt], map: "idx_library_access_user_library_status_exp")
+  /// Map this model to the existing library_access table.
+  @@map("library_access")
+}
+
+/// Provider-backed platform subscription representing app-wide entitlements.
+model PlatformSubscription {
+  /// Internal UUID primary key.
+  id                     String             @id @default(uuid()) @db.Uuid
+  /// User receiving the platform entitlement; one current row per beneficiary in v1.
+  beneficiaryUserId      String             @unique @map("beneficiary_user_id") @db.Uuid
+  /// Optional payer for delegated billing scenarios.
+  payerUserId            String?            @map("payer_user_id") @db.Uuid
+  /// Optional operator who executed billing actions.
+  managedByUserId        String?            @map("managed_by_user_id") @db.Uuid
+  /// Billing provider.
+  provider               BillingProvider?
+  /// Provider customer id for Stripe linkage.
+  providerCustomerId     String?            @map("provider_customer_id")
+  /// Provider subscription id for Stripe linkage.
+  providerSubscriptionId String?            @unique @map("provider_subscription_id")
+  /// Internal platform plan code.
+  planCode               PlatformPlan       @map("plan_code")
+  /// Billing cadence.
+  billingCycle           BillingCycle?      @map("billing_cycle")
+  /// Provider/stateful subscription status.
+  status                 SubscriptionStatus
+  /// Trial start time.
+  trialStart             DateTime?          @map("trial_start") @db.Timestamptz(6)
+  /// Trial end time.
+  trialEnd               DateTime?          @map("trial_end") @db.Timestamptz(6)
+  /// Current billing period start time.
+  currentPeriodStart     DateTime?          @map("current_period_start") @db.Timestamptz(6)
+  /// Current billing period end time.
+  currentPeriodEnd       DateTime?          @map("current_period_end") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt              DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Beneficiary user relation.
+  beneficiaryUser User  @relation("PlatformSubscriptionBeneficiary", fields: [beneficiaryUserId], references: [id], onDelete: Restrict)
+  /// Payer user relation.
+  payerUser       User? @relation("PlatformSubscriptionPayer", fields: [payerUserId], references: [id], onDelete: SetNull)
+  /// Billing-operator relation.
+  managedByUser   User? @relation("PlatformSubscriptionManagedBy", fields: [managedByUserId], references: [id], onDelete: SetNull)
+
+  /// Supports delegated payer support workflows.
+  @@index([payerUserId, status, currentPeriodEnd], map: "idx_platform_subs_payer_status_period_end")
+  /// Supports beneficiary entitlement checks.
+  @@index([beneficiaryUserId, status, currentPeriodEnd], map: "idx_platform_subs_beneficiary_status_period_end")
+  /// Supports global renewal and dunning jobs.
+  @@index([status, currentPeriodEnd], map: "idx_platform_subs_status_period_end")
+  /// Map this model to the existing platform_subscriptions table.
+  @@map("platform_subscriptions")
+}
+
+/// Country-aware pricing rows for platform plans.
+model PlatformPlanPrice {
+  /// Internal UUID primary key.
+  id              String       @id @default(uuid()) @db.Uuid
+  /// Platform plan being priced.
+  planCode        PlatformPlan @map("plan_code")
+  /// Billing cycle being priced.
+  billingCycle    BillingCycle @map("billing_cycle")
+  /// Optional country-specific override; null means global/default.
+  countryCode     String?      @map("country_code") @db.Char(2)
+  /// ISO-4217 currency code.
+  currencyCode    String       @map("currency_code") @db.Char(3)
+  /// Price in minor currency units; null allowed for quote-only rows.
+  priceCents      Int?         @map("price_cents")
+  /// Whether this price applies only to institution deals.
+  institutionOnly Boolean      @default(false) @map("institution_only")
+  /// Whether this row represents contact-sales/quote-only pricing.
+  isQuoteOnly     Boolean      @default(false) @map("is_quote_only")
+  /// Creation timestamp.
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Optional country relation.
+  country Country? @relation(fields: [countryCode], references: [iso2], onDelete: SetNull)
+
+  /// Prevents duplicate pricing rows for the same plan/cycle/country slice.
+  @@unique([planCode, billingCycle, countryCode], map: "uq_platform_plan_prices_plan_cycle_country")
+  /// Map this model to the existing platform_plan_prices table.
+  @@map("platform_plan_prices")
+}
+
+/// Provider-backed paid subscription specific to one premium library.
+model PaidLibrarySubscription {
+  /// Internal UUID primary key.
+  id                        String                        @id @default(uuid()) @db.Uuid
+  /// User receiving the library entitlement.
+  beneficiaryUserId         String                        @map("beneficiary_user_id") @db.Uuid
+  /// Optional payer for delegated billing scenarios.
+  payerUserId               String?                       @map("payer_user_id") @db.Uuid
+  /// Optional operator who executed billing actions.
+  managedByUserId           String?                       @map("managed_by_user_id") @db.Uuid
+  /// Library being subscribed to.
+  libraryId                 String                        @map("library_id") @db.Uuid
+  /// Billing provider.
+  provider                  BillingProvider
+  /// Provider customer id for Stripe linkage.
+  providerCustomerId        String?                       @map("provider_customer_id")
+  /// Provider subscription id for Stripe linkage.
+  providerSubscriptionId    String?                       @unique @map("provider_subscription_id")
+  /// Billing cycle fixed to YEAR_365_DAYS in v1 by SQL constraint.
+  billingCycle              BillingCycle                  @default(YEAR_365_DAYS) @map("billing_cycle")
+  /// Subscription lifecycle state.
+  status                    PaidLibrarySubscriptionStatus
+  /// Price captured at purchase time in minor currency units.
+  priceSnapshotCents        Int                           @map("price_snapshot_cents")
+  /// Currency captured at purchase time.
+  priceSnapshotCurrencyCode String                        @map("price_snapshot_currency_code") @db.Char(3)
+  /// Start time for the paid access window.
+  startedAt                 DateTime?                     @map("started_at") @db.Timestamptz(6)
+  /// End time for the paid access window.
+  endedAt                   DateTime?                     @map("ended_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt                 DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt                 DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Beneficiary user relation.
+  beneficiaryUser User    @relation("PaidLibrarySubscriptionBeneficiary", fields: [beneficiaryUserId], references: [id], onDelete: Restrict)
+  /// Payer user relation.
+  payerUser       User?   @relation("PaidLibrarySubscriptionPayer", fields: [payerUserId], references: [id], onDelete: SetNull)
+  /// Billing-operator relation.
+  managedByUser   User?   @relation("PaidLibrarySubscriptionManagedBy", fields: [managedByUserId], references: [id], onDelete: SetNull)
+  /// Library relation.
+  library         Library @relation(fields: [libraryId], references: [id], onDelete: Restrict)
+
+  /// Supports beneficiary entitlement lookups.
+  @@index([beneficiaryUserId, libraryId, status, endedAt], map: "idx_paid_lib_subs_beneficiary_library_status_end")
+  /// Supports payer/support lookups.
+  @@index([payerUserId, libraryId, status, endedAt], map: "idx_paid_lib_subs_payer_library_status_end")
+  /// Map this model to the existing paid_library_subscriptions table.
+  @@map("paid_library_subscriptions")
+}
+
+/// Logical file/content record stored inside a library.
+model File {
+  /// Internal UUID primary key.
+  id               String              @id @default(uuid()) @db.Uuid
+  /// Parent library containing the file.
+  libraryId        String              @map("library_id") @db.Uuid
+  /// User who uploaded or created the file record.
+  uploadedByUserId String              @map("uploaded_by_user_id") @db.Uuid
+  /// Product material type used by downstream rules like answer-sheet validity.
+  courseMaterial   CourseMaterial      @map("course_material")
+  /// High-level file lifecycle; asset processing is tracked separately on FileAsset.
+  lifecycleStatus  FileLifecycleStatus @default(DRAFT) @map("lifecycle_status")
+  /// Timestamp when the file was published for consumption.
+  publishedAt      DateTime?           @map("published_at") @db.Timestamptz(6)
+  /// Timestamp when draft work most recently started or was intentionally kept as draft.
+  draftSavedAt     DateTime?           @default(now()) @map("draft_saved_at") @db.Timestamptz(6)
+  /// Denormalized aggregate view count retained for recommendation/ranking reads.
+  viewCount        Int                 @default(0) @map("view_count")
+  /// Whether AI participated in generating the content.
+  isAiGenerated    Boolean             @default(false) @map("is_ai_generated")
+  /// Creation timestamp.
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent library relation.
+  library          Library             @relation(fields: [libraryId], references: [id], onDelete: Restrict)
+  /// Uploading/owning user relation.
+  uploadedBy       User                @relation("FileUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  /// Binary assets attached to the logical file.
+  assets           FileAsset[]
+  /// Optional normalized classification row.
+  classification   FileClassification?
+  /// Immutable engagement history attached to the file.
+  engagementEvents EngagementEvent[]
+
+  /// Supports library content listings and uploader-based filters.
+  @@index([libraryId, uploadedByUserId, courseMaterial], map: "idx_files_library_uploader_material")
+  /// Supports publication and draft cleanup workflows.
+  @@index([libraryId, lifecycleStatus, publishedAt], map: "idx_files_library_status_published_at")
+  /// Supports recommendation/ranking queries by view count.
+  @@index([libraryId, viewCount], map: "idx_files_library_view_count")
+  /// Map this model to the existing files table.
+  @@map("files")
+}
+
+/// Binary asset attached to a logical file.
+model FileAsset {
+  /// Internal UUID primary key.
+  id               String               @id @default(uuid()) @db.Uuid
+  /// Parent logical file.
+  fileId           String               @map("file_id") @db.Uuid
+  /// Role of the asset relative to the file.
+  role             FileAssetRole        @map("role")
+  /// Provenance of the asset.
+  source           FileAssetSource      @map("source")
+  /// Storage key in the backing object store.
+  storageKey       String               @unique @map("storage_key")
+  /// Optional original filename from upload time.
+  originalFilename String?              @map("original_filename")
+  /// MIME type of the stored object.
+  mimeType         String               @map("mime_type")
+  /// Size of the stored object in bytes.
+  sizeBytes        BigInt               @map("size_bytes")
+  /// Optional SHA-256 checksum.
+  checksumSha256   String?              @map("checksum_sha256")
+  /// Malware/trust scan result.
+  scanStatus       FileScanStatus       @map("scan_status")
+  /// Processing state for the asset.
+  processingStatus FileProcessingStatus @map("processing_status")
+  /// Creation timestamp.
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Parent file relation.
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  /// Ensures one asset per role on a given file.
+  @@unique([fileId, role], map: "uq_file_assets_file_role")
+  /// Supports role/source resolution for file rendering.
+  @@index([fileId, role, source], map: "idx_file_assets_file_role_source")
+  /// Supports background jobs that process or rescan assets.
+  @@index([role, processingStatus, scanStatus], map: "idx_file_assets_role_processing_scan")
+  /// Map this model to the existing file_assets table.
+  @@map("file_assets")
+}
+
+/// Binary image asset stored separately from file assets because lifecycle and usage differ.
+model ImageAsset {
+  /// Internal UUID primary key.
+  id               String         @id @default(uuid()) @db.Uuid
+  /// Product usage kind for the image.
+  kind             ImageAssetKind @map("kind")
+  /// Optional uploader; platform-provided images may not have one.
+  uploadedByUserId String?        @map("uploaded_by_user_id") @db.Uuid
+  /// Storage key in the backing object store.
+  storageKey       String         @unique @map("storage_key")
+  /// Optional original filename from upload time.
+  originalFilename String?        @map("original_filename")
+  /// MIME type of the stored image.
+  mimeType         String         @map("mime_type")
+  /// Size of the stored object in bytes.
+  sizeBytes        BigInt         @map("size_bytes")
+  /// Optional SHA-256 checksum.
+  checksumSha256   String?        @map("checksum_sha256")
+  /// Creation timestamp.
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Optional uploader relation.
+  uploadedBy User? @relation("ImageAssetUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  /// Supports image browsing by kind.
+  @@index([kind], map: "idx_image_assets_kind")
+  /// Supports uploader-specific image listings.
+  @@index([uploadedByUserId, kind], map: "idx_image_assets_uploader_kind")
+  /// Map this model to the existing image_assets table.
+  @@map("image_assets")
+}
+
+/// Normalized classification anchor for a file, always tied to one subject.
+model FileClassification {
+  /// Internal UUID primary key.
+  id        String   @id @default(uuid()) @db.Uuid
+  /// One-to-one pointer to the classified file.
+  fileId    String   @unique @map("file_id") @db.Uuid
+  /// Subject used as the anchor for all deeper classification joins.
+  subjectId String   @map("subject_id") @db.Uuid
+  /// Creation timestamp.
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// File relation.
+  file     File                        @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  /// Subject relation.
+  subject  Subject                     @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  /// Grade assignments under the classification.
+  grades   FileClassificationGrade[]
+  /// Chapter assignments under the classification.
+  chapters FileClassificationChapter[]
+  /// Topic assignments under the classification.
+  topics   FileClassificationTopic[]
+  /// Keyword assignments under the classification.
+  keywords FileClassificationKeyword[]
+
+  /// Supports subject-based content discovery.
+  @@index([subjectId], map: "idx_file_classifications_subject")
+  /// Map this model to the existing file_classifications table.
+  @@map("file_classifications")
+}
+
+/// Canonical keyword dictionary used by file classifications.
+model Keyword {
+  /// Internal UUID primary key.
+  id             String   @id @default(uuid()) @db.Uuid
+  /// Normalized keyword used for uniqueness and search joins.
+  normalizedTerm String   @unique @map("normalized_term")
+  /// Display keyword shown in UI.
+  displayTerm    String   @map("display_term")
+  /// Creation timestamp.
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Join rows linking this keyword to file classifications.
+  fileClassifications FileClassificationKeyword[]
+
+  /// Map this model to the existing keywords table.
+  @@map("keywords")
+}
+
+/// Join table attaching keywords to a file classification.
+model FileClassificationKeyword {
+  /// Internal UUID primary key.
+  id                   String   @id @default(uuid()) @db.Uuid
+  /// Classification being tagged.
+  fileClassificationId String   @map("file_classification_id") @db.Uuid
+  /// Keyword being attached.
+  keywordId            String   @map("keyword_id") @db.Uuid
+  /// Creation timestamp.
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Classification relation.
+  fileClassification FileClassification @relation(fields: [fileClassificationId], references: [id], onDelete: Cascade)
+  /// Keyword relation.
+  keyword            Keyword            @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  /// Prevents duplicate keyword assignment on the same classification.
+  @@unique([fileClassificationId, keywordId], map: "uq_file_classification_keywords_classification_keyword")
+  /// Supports reverse lookups by keyword.
+  @@index([keywordId], map: "idx_file_classification_keywords_keyword")
+  /// Map this model to the existing file_classification_keywords table.
+  @@map("file_classification_keywords")
+}
+
+/// Join table attaching grades to a file classification.
+model FileClassificationGrade {
+  /// Internal UUID primary key.
+  id                   String   @id @default(uuid()) @db.Uuid
+  /// Classification being extended.
+  fileClassificationId String   @map("file_classification_id") @db.Uuid
+  /// Grade being attached.
+  curriculumGradeId    String   @map("curriculum_grade_id") @db.Uuid
+  /// Creation timestamp.
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Classification relation.
+  fileClassification FileClassification @relation(fields: [fileClassificationId], references: [id], onDelete: Cascade)
+  /// Grade relation.
+  curriculumGrade    CurriculumGrade    @relation(fields: [curriculumGradeId], references: [id], onDelete: Cascade)
+
+  /// Prevents duplicate grade assignment on the same classification.
+  @@unique([fileClassificationId, curriculumGradeId], map: "uq_file_classification_grades_classification_grade")
+  /// Supports reverse lookups by grade.
+  @@index([curriculumGradeId], map: "idx_file_classification_grades_grade")
+  /// Map this model to the existing file_classification_grades table.
+  @@map("file_classification_grades")
+}
+
+/// Join table attaching chapters to a file classification.
+model FileClassificationChapter {
+  /// Internal UUID primary key.
+  id                   String   @id @default(uuid()) @db.Uuid
+  /// Classification being extended.
+  fileClassificationId String   @map("file_classification_id") @db.Uuid
+  /// Chapter being attached.
+  chapterId            String   @map("chapter_id") @db.Uuid
+  /// Creation timestamp.
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Classification relation.
+  fileClassification FileClassification @relation(fields: [fileClassificationId], references: [id], onDelete: Cascade)
+  /// Chapter relation.
+  chapter            Chapter            @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  /// Prevents duplicate chapter assignment on the same classification.
+  @@unique([fileClassificationId, chapterId], map: "uq_file_classification_chapters_classification_chapter")
+  /// Supports reverse lookups by chapter.
+  @@index([chapterId], map: "idx_file_classification_chapters_chapter")
+  /// Map this model to the existing file_classification_chapters table.
+  @@map("file_classification_chapters")
+}
+
+/// Join table attaching topics to a file classification.
+model FileClassificationTopic {
+  /// Internal UUID primary key.
+  id                   String   @id @default(uuid()) @db.Uuid
+  /// Classification being extended.
+  fileClassificationId String   @map("file_classification_id") @db.Uuid
+  /// Topic being attached.
+  topicId              String   @map("topic_id") @db.Uuid
+  /// Creation timestamp.
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Classification relation.
+  fileClassification FileClassification @relation(fields: [fileClassificationId], references: [id], onDelete: Cascade)
+  /// Topic relation.
+  topic              Topic              @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  /// Prevents duplicate topic assignment on the same classification.
+  @@unique([fileClassificationId, topicId], map: "uq_file_classification_topics_classification_topic")
+  /// Supports reverse lookups by topic.
+  @@index([topicId], map: "idx_file_classification_topics_topic")
+  /// Map this model to the existing file_classification_topics table.
+  @@map("file_classification_topics")
+}
+
+/// User-authored rating attached to a library.
+model Rating {
+  /// Internal UUID primary key.
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Rating author.
+  userId    String   @map("user_id") @db.Uuid
+  /// Rated library.
+  libraryId String   @map("library_id") @db.Uuid
+  /// Numeric score; constrained in SQL to the 1..5 range.
+  rating    Int      @db.SmallInt
+  /// Optional written review.
+  review    String?
+  /// Creation timestamp.
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Author relation.
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Library relation.
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  /// One rating per user per library.
+  @@unique([userId, libraryId], map: "uq_ratings_user_library")
+  /// Map this model to the existing ratings table.
+  @@map("ratings")
+}
+
+/// Immutable engagement event stream retained as the source of truth for recommendations and analytics.
+model EngagementEvent {
+  /// Internal UUID primary key.
+  id           String              @id @default(uuid()) @db.Uuid
+  /// Optional acting user; anonymous events can be null.
+  userId       String?             @map("user_id") @db.Uuid
+  /// Library context for the event.
+  libraryId    String              @map("library_id") @db.Uuid
+  /// Optional file context for the event.
+  fileId       String?             @map("file_id") @db.Uuid
+  /// Type of engagement event.
+  eventType    EngagementEventType @map("event_type")
+  /// Optional structured payload with device/session/etc.
+  eventPayload Json?               @map("event_payload")
+  /// Creation timestamp.
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  /// Optional user relation.
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Library relation.
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  /// Optional file relation.
+  file    File?   @relation(fields: [fileId], references: [id], onDelete: SetNull)
+
+  /// Supports timeline queries for library activity.
+  @@index([libraryId, createdAt(sort: Desc)], map: "idx_engagement_library_created_desc")
+  /// Supports file recommendation aggregations.
+  @@index([fileId, eventType, createdAt(sort: Desc)], map: "idx_engagement_file_event_created_desc")
+  /// Supports user activity history.
+  @@index([userId, eventType, createdAt(sort: Desc)], map: "idx_engagement_user_event_created_desc")
+  /// Map this model to the existing engagement_events table.
+  @@map("engagement_events")
+}
+
+/// In-app notification delivered to a user.
+model Notification {
+  /// Internal UUID primary key.
+  id        String             @id @default(uuid()) @db.Uuid
+  /// Recipient user.
+  userId    String             @map("user_id") @db.Uuid
+  /// Notification type key.
+  type      String
+  /// Notification title.
+  title     String
+  /// Notification body.
+  body      String
+  /// Optional structured payload.
+  payload   Json?
+  /// Read/deleted lifecycle state.
+  status    NotificationStatus @default(UNREAD)
+  /// Timestamp when the notification was read.
+  readAt    DateTime?          @map("read_at") @db.Timestamptz(6)
+  /// Soft-delete timestamp for UI removal.
+  deletedAt DateTime?          @map("deleted_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Recipient user relation.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Supports inbox queries by user/status/newest-first.
+  @@index([userId, status, createdAt(sort: Desc)], map: "idx_notifications_user_status_created")
+  /// Supports soft-delete aware cleanup jobs.
+  @@index([userId, deletedAt, createdAt(sort: Desc)], map: "idx_notifications_user_deleted_created")
+  /// Map this model to the existing notifications table.
+  @@map("notifications")
+}
+
+/// Country reference table used for geo hierarchy, pricing, and organization profiles.
+model Country {
+  /// ISO-3166 alpha-2 primary key.
+  iso2     String  @id @db.Char(2)
+  /// Human-readable country name.
+  name     String
+  /// Product flag controlling whether state/county selection should be available.
+  isActive Boolean @default(false) @map("is_active")
+
+  /// Profiles located in this country.
+  profiles           UserProfile[]
+  /// States belonging to this country.
+  states             CountryState[]
+  /// Country-specific platform pricing rows.
+  platformPlanPrices PlatformPlanPrice[]
+  /// Companies located in this country.
+  companies          Company[]
+  /// Institutions located in this country.
+  institutions       Institution[]
+
+  /// Supports country activation filters.
+  @@index([isActive], map: "idx_countries_is_active")
+  /// Map this model to the existing countries table.
+  @@map("countries")
+}
+
+/// State reference table nested under countries.
+model CountryState {
+  /// Internal UUID primary key.
+  id          String @id @default(uuid()) @db.Uuid
+  /// Parent country code.
+  countryCode String @map("country_code") @db.Char(2)
+  /// Stable state code within the country.
+  stateCode   String @map("state_code")
+  /// Human-readable state name.
+  stateName   String @map("state_name")
+
+  /// Parent country relation.
+  country  Country       @relation(fields: [countryCode], references: [iso2], onDelete: Cascade)
+  /// Counties under this state.
+  counties StateCounty[]
+
+  /// Prevents duplicate state codes inside one country.
+  @@unique([countryCode, stateCode], map: "uq_country_states_country_state")
+  /// Supports listing states for an active country.
+  @@index([countryCode, stateName], map: "idx_country_states_country_name")
+  /// Map this model to the existing country_states table.
+  @@map("country_states")
+}
+
+/// County reference table nested under country/state.
+model StateCounty {
+  /// Internal UUID primary key.
+  id          String @id @default(uuid()) @db.Uuid
+  /// Parent country code.
+  countryCode String @map("country_code") @db.Char(2)
+  /// Parent state code.
+  stateCode   String @map("state_code")
+  /// Stable county code within the state.
+  countyCode  String @map("county_code")
+  /// Human-readable county name.
+  countyName  String @map("county_name")
+
+  /// Composite relation back to the parent state row.
+  state CountryState @relation(fields: [countryCode, stateCode], references: [countryCode, stateCode], onDelete: Cascade)
+
+  /// Prevents duplicate county codes inside one country/state pair.
+  @@unique([countryCode, stateCode, countyCode], map: "uq_state_counties_country_state_county")
+  /// Supports county listing within a state.
+  @@index([countryCode, stateCode, countyName], map: "idx_state_counties_country_state_name")
+  /// Map this model to the existing state_counties table.
+  @@map("state_counties")
+}
+
+/// Company entity distinct from institutions, used for operating institutions and company-scoped memberships.
+model Company {
+  /// Internal UUID primary key.
+  id              String   @id @default(uuid()) @db.Uuid
+  /// Human-readable company name.
+  name            String
+  /// Optional user-facing slug for routing and discovery.
+  slug            String?  @unique
+  /// Country where the company is located.
+  countryCode     String   @map("country_code") @db.Char(2)
+  /// Optional state code within the country.
+  stateCode       String?  @map("state_code")
+  /// Optional county code within the state.
+  countyCode      String?  @map("county_code")
+  /// Business verification flag; defaults false until explicitly approved.
+  isVerified      Boolean  @default(false) @map("is_verified")
+  /// Whether the company is in the EdTech segment.
+  isEdTechCompany Boolean  @default(false) @map("is_ed_tech_company")
+  /// Creation timestamp.
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Country relation.
+  country              Country             @relation(fields: [countryCode], references: [iso2], onDelete: Restrict)
+  /// Institutions operated by this company.
+  operatedInstitutions Institution[]       @relation("InstitutionOperatorCompany")
+  /// Membership rows for users attached to the company.
+  memberships          CompanyMembership[]
+
+  /// Supports company filtering by country.
+  @@index([countryCode], map: "idx_companies_country")
+  /// Supports filtering by EdTech segment and verification.
+  @@index([isEdTechCompany, isVerified], map: "idx_companies_ed_tech_verified")
+  /// Supports slug-based routing while backfill remains nullable.
+  @@index([slug], map: "idx_companies_slug")
+  /// Map this model to the existing companies table.
+  @@map("companies")
+}
+
+/// Institution entity distinct from companies and users, used for institution ownership and memberships.
+model Institution {
+  /// Internal UUID primary key.
+  id                 String                        @id @default(uuid()) @db.Uuid
+  /// Optional operator company responsible for this institution.
+  operatorCompanyId  String?                       @map("operator_company_id") @db.Uuid
+  /// Human-readable institution name.
+  name               String
+  /// Optional user-facing slug for routing and discovery.
+  slug               String?                       @unique
+  /// Country where the institution is located.
+  countryCode        String                        @map("country_code") @db.Char(2)
+  /// Optional state code within the country.
+  stateCode          String?                       @map("state_code")
+  /// Optional county code within the state.
+  countyCode         String?                       @map("county_code")
+  /// Institution category such as K12 or college.
+  category           InstitutionCategory
+  /// Optional institution level.
+  level              InstitutionLevel?
+  /// Business verification flag; defaults false until approved.
+  isVerified         Boolean                       @default(false) @map("is_verified")
+  /// Verification workflow state; starts pending until approval occurs.
+  verificationStatus InstitutionVerificationStatus @default(PENDING) @map("verification_status")
+  /// Timestamp when verification completed.
+  verifiedAt         DateTime?                     @map("verified_at") @db.Timestamptz(6)
+  /// Creation timestamp.
+  createdAt          DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt          DateTime                      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Optional operator company relation.
+  operatorCompany  Company?                @relation("InstitutionOperatorCompany", fields: [operatorCompanyId], references: [id], onDelete: SetNull)
+  /// Country relation.
+  country          Country                 @relation(fields: [countryCode], references: [iso2], onDelete: Restrict)
+  /// Profiles currently attached to the institution.
+  profiles         UserProfile[]
+  /// Institution membership rows.
+  memberships      InstitutionMembership[]
+  /// Curricula offered by the institution.
+  offeredCurricula InstitutionCurriculum[]
+  /// Libraries owned by the institution.
+  ownedLibraries   Library[]               @relation("InstitutionOwnedLibraries")
+
+  /// Supports operator-company lookup.
+  @@index([operatorCompanyId], map: "idx_institutions_operator_company")
+  /// Supports location/category/level filtering.
+  @@index([countryCode, category, level], map: "idx_institutions_country_category_level")
+  /// Supports verification workflow filtering.
+  @@index([verificationStatus, isVerified], map: "idx_institutions_verification_status")
+  /// Supports slug-based routing while backfill remains nullable.
+  @@index([slug], map: "idx_institutions_slug")
+  /// Map this model to the existing institutions table.
+  @@map("institutions")
+}
+
+/// Join table capturing which curricula an institution offers.
+model InstitutionCurriculum {
+  /// Internal UUID primary key.
+  id             String         @id @default(uuid()) @db.Uuid
+  /// Institution offering the curriculum.
+  institutionId  String         @map("institution_id") @db.Uuid
+  /// Offered curriculum code.
+  curriculumCode CurriculumCode @map("curriculum_code")
+  /// Creation timestamp.
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Update timestamp.
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  /// Institution relation.
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  /// Curriculum relation.
+  curriculum  Curriculum  @relation(fields: [curriculumCode], references: [code], onDelete: Restrict)
+
+  /// Prevents duplicate curriculum offerings per institution.
+  @@unique([institutionId, curriculumCode], map: "uq_institution_curricula_institution_curriculum")
+  /// Supports reverse lookups by curriculum.
+  @@index([curriculumCode], map: "idx_institution_curricula_curriculum")
+  /// Map this model to the existing institution_curricula table.
+  @@map("institution_curricula")
+}
+
+// Note:
+// PostgreSQL migrations should enforce the cross-row and cross-table rules Prisma cannot express directly.
+// Key SQL hardening rules now include ownership XOR for libraries, student-elevation restrictions, verified-status consistency, one active premium price per library, one primary curriculum per user, non-negative pricing, rating range, and paid library billing fixed to YEAR_365_DAYS.
+// Classification integrity across subject/chapter/topic and curriculum-level compatibility should remain enforced through SQL and service validations because those rules span multiple joined tables.
+// File lifecycle rules are split intentionally: File.lifecycleStatus captures draft versus published intent, FileAsset.processingStatus tracks binary processing, PRIMARY_CONTENT existence is enforced via service workflow or deferred SQL trigger, and THUMBNAIL may be absent only when backend responses guarantee a fallback asset.
+// State and county selectors should be exposed only for active countries; this is best enforced by query/service behavior rather than by denormalizing activity flags onto every state row.
